@@ -118,6 +118,36 @@
         }
     },
     {
+        "name": "windows-cpu",
+        "displayName": "InferSSD Windows UCRT64 CPU (experimental)",
+        "inherits": [ "base", "release" ],
+        "condition": {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+        },
+        "cacheVariables": {
+            "CMAKE_C_COMPILER": "gcc",
+            "CMAKE_CXX_COMPILER": "g++",
+            "GGML_CPU": "ON",
+            "GGML_NATIVE": "ON",
+            "GGML_CUDA": "OFF",
+            "GGML_METAL": "OFF",
+            "GGML_VULKAN": "OFF",
+            "GGML_BLAS": "OFF",
+            "GGML_OPENMP": "OFF",
+            "GGML_BACKEND_DL": "OFF",
+            "GGML_CPU_ALL_VARIANTS": "OFF",
+            "LLAMA_SSD_STORE": "ON",
+            "LLAMA_BUILD_COMMON": "ON",
+            "LLAMA_BUILD_TOOLS": "ON",
+            "LLAMA_BUILD_SERVER": "ON",
+            "LLAMA_BUILD_TESTS": "ON",
+            "LLAMA_BUILD_EXAMPLES": "OFF",
+            "LLAMA_OPENSSL": "OFF"
+        }
+    },
+    {
         "name": "linux-cpu",
         "inherits": [
             "base",
