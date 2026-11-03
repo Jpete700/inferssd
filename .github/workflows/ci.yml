@@ -156,16 +156,21 @@ jobs:
       - name: Build, 16 tests and HTTP smoke
         shell: pwsh
         run: |
-          $env:PATH = 'C:\msys64\ucrt64\bin;' + $env:PATH
-          $gcc = (Get-Command gcc -ErrorAction Stop).Source
-          if ($gcc -notmatch '\\ucrt64\\') { throw "Expected the MSYS2 UCRT64 gcc, found $gcc." }
+          $gcc = Get-Command gcc -All -ErrorAction Stop |
+            Where-Object { $_.Source -match '\\ucrt64\\' } | Select-Object -First 1
+          if (-not $gcc) { throw 'The MSYS2 UCRT64 gcc is not on PATH.' }
+          $env:PATH = (Split-Path -Parent $gcc.Source) + ';' + $env:PATH
           .\scripts\build-windows-cpu.ps1 -Jobs 4
       - name: Build the experimental package
         shell: pwsh
         run: |
-          $env:PATH = 'C:\msys64\ucrt64\bin;' + $env:PATH
+          $gcc = Get-Command gcc -All -ErrorAction Stop |
+            Where-Object { $_.Source -match '\\ucrt64\\' } | Select-Object -First 1
+          if (-not $gcc) { throw 'The MSYS2 UCRT64 gcc is not on PATH.' }
+          $ucrt = Split-Path -Parent $gcc.Source
+          $env:PATH = $ucrt + ';' + $env:PATH
           .\scripts\package-windows-cpu.ps1 -Version "ci-${{ github.run_number }}" `
-            -PythonRuntime $env:pythonLocation -RuntimeDir 'C:\msys64\ucrt64\bin'
+            -PythonRuntime $env:pythonLocation -RuntimeDir $ucrt
       - name: Verify without developer tools on PATH
         shell: pwsh
         run: |
