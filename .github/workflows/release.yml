@@ -57,6 +57,9 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
+      - name: Put the UCRT64 toolchain first
+        shell: pwsh
+        run: Add-Content -Path $env:GITHUB_PATH -Value 'C:\msys64\ucrt64\bin'
       - name: Resolve the packaging Python
         shell: pwsh
         run: |
@@ -67,7 +70,10 @@ jobs:
           & (Join-Path $env:pythonLocation 'python.exe') -I -c "import platform; print(platform.python_version())"
       - name: Build, 16 tests and HTTP smoke
         shell: pwsh
-        run: .\scripts\build-windows-cpu.ps1 -Jobs 4
+        run: |
+          $gcc = (Get-Command gcc -ErrorAction Stop).Source
+          if ($gcc -notmatch '\\ucrt64\\') { throw "Expected the MSYS2 UCRT64 gcc, found $gcc." }
+          .\scripts\build-windows-cpu.ps1 -Jobs 4
       - name: Build the experimental package
         shell: pwsh
         run: .\scripts\package-windows-cpu.ps1 -Version $env:GITHUB_REF_NAME.TrimStart('v') -PythonRuntime $env:pythonLocation
@@ -78,10 +84,12 @@ jobs:
           .\scripts\verify-windows-package.ps1 -PackageZip $zip
       - name: Package layout and checksums
         shell: pwsh
-        run: python -X utf8 tests\integration\test-windows-package.py -v
+        run: |
+          & (Join-Path $env:pythonLocation 'python.exe') -X utf8 tests\integration\test-windows-package.py -v
       - name: Launcher process ownership
         shell: pwsh
-        run: python -X utf8 tests\integration\test-windows-server.py -v
+        run: |
+          & (Join-Path $env:pythonLocation 'python.exe') -X utf8 tests\integration\test-windows-server.py -v
       - name: Attach the package to the release
         shell: pwsh
         env:
