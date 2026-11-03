@@ -137,6 +137,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        id: msys2
         with:
           msystem: UCRT64
           update: false
@@ -156,18 +157,14 @@ jobs:
       - name: Build, 16 tests and HTTP smoke
         shell: pwsh
         run: |
-          $gcc = Get-Command gcc -All -ErrorAction Stop |
-            Where-Object { $_.Source -match '\\ucrt64\\' } | Select-Object -First 1
-          if (-not $gcc) { throw 'The MSYS2 UCRT64 gcc is not on PATH.' }
-          $env:PATH = (Split-Path -Parent $gcc.Source) + ';' + $env:PATH
+          $ucrt = Join-Path "${{ steps.msys2.outputs.msys2-location }}" 'ucrt64\bin'
+          if (-not (Test-Path (Join-Path $ucrt 'gcc.exe'))) { throw "No UCRT64 gcc in $ucrt." }
+          $env:PATH = $ucrt + ';' + $env:PATH
           .\scripts\build-windows-cpu.ps1 -Jobs 4
       - name: Build the experimental package
         shell: pwsh
         run: |
-          $gcc = Get-Command gcc -All -ErrorAction Stop |
-            Where-Object { $_.Source -match '\\ucrt64\\' } | Select-Object -First 1
-          if (-not $gcc) { throw 'The MSYS2 UCRT64 gcc is not on PATH.' }
-          $ucrt = Split-Path -Parent $gcc.Source
+          $ucrt = Join-Path "${{ steps.msys2.outputs.msys2-location }}" 'ucrt64\bin'
           $env:PATH = $ucrt + ';' + $env:PATH
           .\scripts\package-windows-cpu.ps1 -Version "ci-${{ github.run_number }}" `
             -PythonRuntime $env:pythonLocation -RuntimeDir $ucrt
