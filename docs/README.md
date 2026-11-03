@@ -6,6 +6,8 @@
 ## Using InferSSD
 
 - [Quick start](quickstart.md): build and launch on macOS or Linux.
+- [Windows CPU service (experimental)](windows-server.md): local browser chat, API, startup, logs and shutdown.
+- [Windows experimental package](windows-package.md): self-contained x64 CPU zip, packaging, clean-environment verification and release artifacts.
 - [Apple Silicon deployment](mac-launcher.md): Metal build, cache and thread settings.
 - [Configuration](configuration.md): the typed `inferssd-settings 1` contract.
 - [Deployment resources](engine-resources.md): engine descriptors for installations outside a checkout.

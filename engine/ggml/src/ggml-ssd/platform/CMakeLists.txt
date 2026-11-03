@@ -24,4 +24,8 @@ endif()
 target_sources(ggml-ssd-platform PRIVATE file.cpp file.h)
 if (WIN32)
     target_link_libraries(ggml-ssd-platform PRIVATE ntdll)
+    if (MINGW)
+        # The API-set import library omits the thread-local invalid-parameter handler.
+        target_link_libraries(ggml-ssd-platform PRIVATE ucrtbase)
+    endif()
 endif()

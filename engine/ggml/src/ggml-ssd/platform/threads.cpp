@@ -17,6 +17,10 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#if defined(__MINGW32__) && defined(_GLIBCXX_GCC_GTHR_POSIX_H)
+#include <pthread.h>
+#define SSD_WINPTHREADS
+#endif
 #elif defined(__APPLE__)
 #include <os/os_sync_wait_on_address.h>
 #include <pthread.h>
@@ -67,7 +71,11 @@ bool split_fastest(const std::vector<std::pair<int, double>> & values, cpu_topol
 
 bool pin_current_thread(const cpu_list & cpus) {
 #if defined(_WIN32)
+#if defined(SSD_WINPTHREADS)
+    return pin_thread(pthread_self(), cpus);
+#else
     return pin_thread(GetCurrentThread(), cpus);
+#endif
 #else
     return pin_thread(pthread_self(), cpus);
 #endif
@@ -365,19 +373,23 @@ bool current_thread_cpus(cpu_list & cpus, std::string * why) {
 
 bool pin_thread(std::thread::native_handle_type handle, const cpu_list & cpus) {
     if (cpus.empty()) { return true; }
+#if defined(SSD_WINPTHREADS)
+    const HANDLE thread = pthread_gethandle(handle);
+#else
     const HANDLE thread = static_cast<HANDLE>(handle);
+#endif
     DWORD_PTR wanted = 0, allowed = 0;
     // Like a Linux mask outside the allowed set, CPUs the process may not use are refused.
     if (!cpu_mask(cpus, wanted) || !process_mask(allowed) || (wanted & ~allowed) != 0) { return false; }
     const auto & sets = cpu_sets();
     if (sets.available) {
-        // A hard thread affinity outranks selected CPU Sets: the thread runs on
-        // their intersection, or ignores the sets when it is empty. Exact only
-        // if that affinity admits every wanted CPU.
-        GROUP_AFFINITY hard = {};
+        // CPU Sets are soft affinity: Windows may run a thread elsewhere when
+        // its selected cores are parked. Keep the selection aligned with the
+        // hard mask below, which enforces pin_thread's exact-placement contract.
         DWORD_PTR actual = 0;
-        return GetThreadGroupAffinity(thread, &hard) && hard.Group == 0 && (DWORD_PTR(hard.Mask) & wanted) == wanted &&
-            select_mask(thread, sets, wanted) && selected_mask(thread, sets, actual) && actual == wanted;
+        if (!select_mask(thread, sets, wanted) || !selected_mask(thread, sets, actual) || actual != wanted) {
+            return false;
+        }
     }
     GROUP_AFFINITY affinity = {}, actual = {};
     affinity.Mask = KAFFINITY(wanted);

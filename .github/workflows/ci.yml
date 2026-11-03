@@ -125,6 +125,73 @@ jobs:
           build-linux-cpu/bin/inferssd-cpuprobe --rows 64 --cols 256 --tokens 1,2 --min-seconds 0 --threads 1 \
             | python3 -c 'import json, sys; d = json.load(sys.stdin); assert d["schema"] == "inferssd-cpuprobe/1" and d["dram"] and d["compute"] and not d["skipped"], d'
 
+  windows-cpu:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        id: msys2
+        with:
+          msystem: UCRT64
+          update: false
+          path-type: inherit
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+      - name: Resolve the packaging Python
+        shell: pwsh
+        run: |
+          if (-not $env:pythonLocation) { throw 'actions/setup-python did not set pythonLocation.' }
+          if (-not (Test-Path (Join-Path $env:pythonLocation 'python.exe'))) {
+            throw "No python.exe in $env:pythonLocation."
+          }
+          & (Join-Path $env:pythonLocation 'python.exe') -I -c "import platform; print(platform.python_version())"
+      - name: Build, 16 tests and HTTP smoke
+        shell: pwsh
+        run: |
+          $ucrt = Join-Path "${{ steps.msys2.outputs.msys2-location }}" 'ucrt64\bin'
+          if (-not (Test-Path (Join-Path $ucrt 'gcc.exe'))) { throw "No UCRT64 gcc in $ucrt." }
+          $env:PATH = $ucrt + ';' + $env:PATH
+          .\scripts\build-windows-cpu.ps1 -Jobs 4
+      - name: Build the experimental package
+        shell: pwsh
+        run: |
+          $ucrt = Join-Path "${{ steps.msys2.outputs.msys2-location }}" 'ucrt64\bin'
+          $env:PATH = $ucrt + ';' + $env:PATH
+          .\scripts\package-windows-cpu.ps1 -Version "ci-${{ github.run_number }}" `
+            -PythonRuntime $env:pythonLocation -RuntimeDir $ucrt
+      - name: Verify without developer tools on PATH
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem dist\*.zip | Select-Object -First 1).FullName
+          .\scripts\verify-windows-package.ps1 -PackageZip $zip
+      - name: Package layout and checksums
+        shell: pwsh
+        run: |
+          & (Join-Path $env:pythonLocation 'python.exe') -X utf8 tests\integration\test-windows-package.py -v
+      - name: Launcher process ownership
+        shell: pwsh
+        run: |
+          & (Join-Path $env:pythonLocation 'python.exe') -X utf8 tests\integration\test-windows-server.py -v
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: inferssd-windows-x64-cpu
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            dist/package-*.json
+            dist/verification-*.json
+          if-no-files-found: warn
+
   macos:
     if: github.event_name == 'workflow_dispatch' || (!github.event.repository.private && (github.event_name != 'pull_request' || !github.event.pull_request.draft))
     runs-on: macos-15

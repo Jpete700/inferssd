@@ -74,6 +74,8 @@ Unified memory is shared by the CPU and GPU. SSD capacities are nominal. See [ha
 
 ## Get started
 
+For the experimental native Windows CPU workflow, see [Windows local service](docs/windows-server.md) and the [self-contained experimental package](docs/windows-package.md).
+
 Install on Apple Silicon macOS or on Linux with an NVIDIA GPU:
 
 ```sh

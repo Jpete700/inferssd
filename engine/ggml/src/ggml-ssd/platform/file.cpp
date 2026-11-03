@@ -19,6 +19,11 @@
 #include <fcntl.h>
 #include <io.h>
 #include <stdlib.h>
+#if defined(__MINGW32__) && defined(_UCRT)
+// MinGW's UCRT headers omit this export; it is provided by ucrtbase.dll.
+extern "C" _CRTIMP _invalid_parameter_handler __cdecl
+    _set_thread_local_invalid_parameter_handler(_invalid_parameter_handler);
+#endif
 // ntdll export, declared by the driver kit; the SDK's winternl.h has its types.
 extern "C" NTSYSAPI NTSTATUS NTAPI NtQueryInformationFile(HANDLE, PIO_STATUS_BLOCK, PVOID, ULONG,
                                                            FILE_INFORMATION_CLASS);

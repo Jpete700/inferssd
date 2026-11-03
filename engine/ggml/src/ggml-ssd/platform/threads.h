@@ -51,8 +51,8 @@ bool affinity_supported();
 
 // Restrict a thread to exactly `cpus` and read the result back; false if the
 // OS refused or the read-back differs. An empty list is a no-op. Windows uses
-// CPU Sets (hybrid aware, cooperates with core parking), else group affinity;
-// a hard thread affinity that excludes a wanted CPU fails the pin.
+// group affinity to enforce placement even when cores are parked, with CPU
+// Sets aligned to that mask when available. CPUs outside the process mask fail.
 bool pin_current_thread(const cpu_list & cpus);
 bool pin_thread(std::thread::native_handle_type thread, const cpu_list & cpus);
 
