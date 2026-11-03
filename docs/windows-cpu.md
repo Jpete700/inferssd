@@ -4,6 +4,7 @@
 
 2026-11-03 已在 Windows 11 x64（内核版本 10.0.26200）完成源码构建、16 项基础测试及无模型 HTTP 启动检查。
 这是 [Windows 实验计划](../WINDOWS-EXPERIMENTAL-PLAN.md) 的阶段一结果。真实模型、完整 SSD 专家执行与性能验收仍需后续阶段完成。
+阶段五的分发包、打包和干净环境验收见 [Windows 实验版分发包](windows-package.md)。
 
 ## 源码与依赖
 

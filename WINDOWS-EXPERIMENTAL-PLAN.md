@@ -22,6 +22,8 @@
 
 ## 阶段二：验证 SSD 读取与 CPU 专家执行
 
+状态：2026-11-03 已完成设备级验收。基于 `4240ef8` 的 Windows UCRT64 构建运行了 19 个测试可执行文件、258 项用例，全部通过、0 跳过；automatic、overlapped 和 IoRing 三种执行器各覆盖 121 项，验收要求 IoRing 可用。覆盖平台线程/内存/文件、读取环、源索引、宿主预算、Kimi 专家缓存租约/预取/CPU sink 与 prefill，以及 MOE 提交和跨角色路径。验收记录保存在本机构建目录 `build-windows-cpu/ssd-validation/`（`summary.json`、`manifest.json`、测试日志），真实模型链路随后由阶段三验证；该阶段尚未整理独立的 Windows I/O 文档。
+
 - 验证现有 Windows 文件、内存、线程和异步读取适配。
 - 检查 IoRing 与 Overlapped 回退路径，以及专家缓存、预取和回收行为。
 - 通过相关底层测试，修复影响正确性或稳定性的问题。
@@ -40,6 +42,8 @@
 
 ## 阶段四：补齐启动与服务体验
 
+状态：2026-11-03 已完成 Windows CPU 启动器，提供 start / serve / status / logs / stop，支持模型路径、内存预算、上下文及端口。用户手动确认浏览器聊天、历史、流式显示、停止后继续聊天和刷新重连通过；自动 API 验收确认非流式回复、23 个 SSE 内容块、断开后约 2.18 秒释放槽位及后续请求恢复。启动检查、正常停止、重启、异常退出与 Windows Job Object 清理已实测。命令、日志位置及边界见 [Windows 本地服务说明](docs/windows-server.md)。
+
 - 提供 Windows 启动器，支持模型路径、内存预算、上下文长度和端口配置。
 - 验证浏览器聊天、本地 API、流式输出与请求取消。
 - 补齐启动检查、日志、停止操作和异常后的进程清理。
@@ -47,6 +51,8 @@
 阶段结果：用户可以通过简单命令启动、使用和停止本地服务。
 
 ## 阶段五：打包可用实验版
+
+状态：2026-11-04 已完成 Windows x64 CPU 实验包。包内含原生服务端、UCRT64 运行时 DLL、启动器、便携 Python、对话模板、示例和 SHA-256 清单，模型权重单独准备。`dist/inferssd-windows-x64-cpu-0.0.0-windows-experimental.zip` 约 21 MiB，解压约 56 MiB；在把 PATH 收窄为 `System32`、清除 `PYTHONHOME`/`PYTHONPATH` 的同机环境中，包校验、服务端启动、无模型 HTTP、包内 Python、启动器 `doctor`、真实模型 10 分片识别、一次真实生成（`WINDOWS_PACKAGE_OK`）和 Windows PowerShell 5.1 包装脚本全部通过。Windows CI 与 Release 附件流程已加入；尚未在第二台无开发工具的物理机复测。分发内容、验收命令、已测硬件与限制见 [Windows 实验版分发包](docs/windows-package.md)。
 
 - 整理程序、依赖、启动器、示例配置和使用说明；模型文件单独准备。
 - 在没有开发工具链的 Windows 环境中复测，增加 Windows 自动构建与回归测试。
