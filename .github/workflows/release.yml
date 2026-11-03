@@ -48,7 +48,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
           msystem: UCRT64
           update: false
@@ -57,6 +57,14 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
+      - name: Resolve the packaging Python
+        shell: pwsh
+        run: |
+          if (-not $env:pythonLocation) { throw 'actions/setup-python did not set pythonLocation.' }
+          if (-not (Test-Path (Join-Path $env:pythonLocation 'python.exe'))) {
+            throw "No python.exe in $env:pythonLocation."
+          }
+          & (Join-Path $env:pythonLocation 'python.exe') -I -c "import platform; print(platform.python_version())"
       - name: Build, 16 tests and HTTP smoke
         shell: pwsh
         run: .\scripts\build-windows-cpu.ps1 -Jobs 4
@@ -71,6 +79,9 @@ jobs:
       - name: Package layout and checksums
         shell: pwsh
         run: python -X utf8 tests\integration\test-windows-package.py -v
+      - name: Launcher process ownership
+        shell: pwsh
+        run: python -X utf8 tests\integration\test-windows-server.py -v
       - name: Attach the package to the release
         shell: pwsh
         env:
